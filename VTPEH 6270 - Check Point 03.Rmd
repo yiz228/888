@@ -1,0 +1,144 @@
+---
+title: "VTPEH 6270 - Check Point 03"
+subtitle: "Data Set Selection & R markdown Report Outline"
+author: "Yi(Eve) Zhang"
+date: "2026-02-18"
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+urlcolor: blue
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Research Question and Background
+
+## Research Question
+In 2023, how does the prevalence of arthritis among adults vary across U.S. states?
+
+## Scientific Plausibility and Context
+Arthritis is one of the most common chronic conditions among U.S. adults and a major contributor to pain, disability, and reduced quality of life [@NCHS497_2024].  
+Adults with arthritis are generally less physically active than those without, and many report engaging in only low-impact activities such as walking, which highlights the functional impact of the condition [@CDC_MMWR_mm7040a3].  
+Counties with higher arthritis prevalence and arthritis-attributable pain outcomes show significant spatial clustering in the United States, indicating that geographic variation is not random [@Sun2024_GeographyArthritisPain].  
+Therefore, it is scientifically plausible that adult arthritis prevalence varies across U.S. states in 2023, reflecting differences in the distribution of higher- and lower-burden counties within states.
+
+# Data Preparation
+
+The analytic dataset includes a continuous outcome (county-level crude arthritis prevalence) and a categorical grouping variable (state), enabling grouped summaries and visualization.
+
+
+## Import and cleaning
+
+```{r, results='hide'}
+library(readr)
+library(dplyr)
+library(stringr)
+library(janitor)
+library(forcats)
+library(ggplot2)
+
+#import data
+setwd("/Users/eve/Desktop/V270")
+places <- read_csv("PLACES__Local_Data_for_Better_Health,_County_Data,_2025_release_20260127.csv") |>
+  clean_names()
+#checking column names
+names(places)
+#checking data_value_type
+places |>
+  distinct(data_value_type) |>
+  arrange(data_value_type) |>
+  print(n = 50)
+
+# Subset to analytic dataset for the research question
+arthritis_2023 <- places |>
+  filter(
+    year == 2023,
+    measure == "Arthritis among adults",
+    data_value_type == "Crude prevalence"
+  ) |>
+  filter(!is.na(data_value)) |>
+  select(
+    state_desc, location_name,
+    year, measure, data_value_type,
+    data_value, low_confidence_limit, high_confidence_limit
+  )
+
+# Quick checks
+arthritis_2023 |>
+  summarise(
+    n_rows = n(),
+    n_states = n_distinct(state_desc),
+    min = min(data_value),
+    max = max(data_value)
+  )
+```
+
+## Derived Variables
+```{r}
+arthritis_2023 <- arthritis_2023 |>
+  mutate(`arthritis_prop` = data_value / 100)
+
+summary(arthritis_2023$arthritis_prop)
+
+```
+The research question compares crude arthritis prevalence (`data_value`) across states (`state_desc`) directly. I converted the crude prevalence from percent to proportion to facilitate interpretation (`arthritis_prop = data_value/100`).
+
+
+## Categorization and Discretization
+
+No discretization was needed because the grouping variable `state_desc` is categorical (U.S. state), which supports grouped summaries and visualization; the outcome `data_value` is continuous (county-level crude prevalence).
+
+# Grouped Summary Statistics
+## Stratified Analysis
+### Table 1
+
+```{r}
+
+library(knitr)
+library(kableExtra)
+```
+
+
+```{r}
+
+table_AB <- arthritis_2023 |>
+  filter(!state_desc %in% c("United States")) |>
+  group_by(state_desc) |>
+  summarise(
+    n_counties = n(),
+    mean_pct = mean(data_value, na.rm = TRUE),
+    sd_pct = sd(data_value, na.rm = TRUE),
+    median_pct = median(data_value, na.rm = TRUE),
+    iqr_pct = IQR(data_value, na.rm = TRUE),
+    min_pct = min(data_value, na.rm = TRUE),
+    max_pct = max(data_value, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(desc(median_pct)) |>
+  mutate(across(where(is.numeric), ~ round(.x, 1)))
+
+table_AB |>
+  kable(
+    format = "latex",
+    booktabs = TRUE,
+    longtable = TRUE,
+    caption = "table_AB: Descriptive statistics for county-level crude arthritis prevalence (percent), stratified by state, 2023 (PLACES)",
+    col.names = c("State", "N counties", "Mean", "SD", "Median", "IQR", "Min", "Max")
+  ) |>
+  kable_styling(latex_options = c("repeat_header"), font_size = 9)
+```
+
+
+
+### Table 2
+
+
+
