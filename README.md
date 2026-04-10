@@ -11,7 +11,7 @@ Is the prevalence of overweight classification differed by race/ethnicity among 
 
 ## Under Checkpoint 6 File
 - `VTPEH6270 - Check Point 06.Rmd` — R Markdown source file for the report
-- `VTPEH6270 --- Check Point 06.pdf` — compiled PDF report
+- `VTPEH-6270---Check-Point-06.pdf` — compiled PDF report
 - `cp06_references.bib` — bibliography file used for citations
 - `Nutrition,_Physical_Activity,_and_Obesity_-_Women,_Infant,_and_Child_20260409.csv` — dataset used for the analysis
 
